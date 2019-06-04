@@ -1,0 +1,73 @@
+<mat-card class="card">
+  <mat-card-header>
+    <mat-icon matSufix class="maticon">how_to_reg</mat-icon>
+    <mat-card-title>Edit Profile</mat-card-title>
+    <mat-card-subtitle>Interview Prep</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+
+
+    <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="form" *ngIf="data">
+      <mat-divider></mat-divider>
+      <h3>Core Profile</h3>
+      <form [formGroup]="coreProfileForm" class="form" *ngIf="data.profile">
+        <mat-form-field>
+          <mat-select placeholder="College" formControlName="college">
+            <mat-option *ngFor="let college of colleges" [value]="college.id">
+              {{college.name}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <!-- <mat-form-field>
+        
+        <mat-autocomplete #auto="matAutocomplete">
+          <mat-option *ngFor="let college of colleges" [value]="college.name">
+            {{ college.name }}
+          </mat-option>
+        </mat-autocomplete>
+      </mat-form-field> -->
+        <mat-form-field>
+          <mat-select placeholder="Graduation year" formControlName="graduation_year">
+            <mat-option *ngFor="let year of years" [value]="year">
+              {{year}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-select placeholder="Field of Study" formControlName="fieldofstudy">
+            <mat-option *ngFor="let studyfield of studyfields" [value]="studyfield.id">
+              {{studyfield.name}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field placeholder="Phone Number">
+          <input type="tel" matInput placeholder="Phone Number" formControlName="phone">
+        </mat-form-field>
+
+      </form>
+      <mat-divider></mat-divider>
+
+      <h3>Interview Profile</h3>
+      <!--TODO: put coding profile fields-->
+      <form [formGroup]="codingProfileForm" class="form" *ngIf="data.codingprofile">
+        <mat-form-field>
+          <mat-select placeholder="English Education Background" formControlName="english_education">
+            <mat-option value="N">Non English Medium</mat-option>
+            <mat-option value="E">English Medium</mat-option>
+            <mat-option value="P">Mixed English and Local</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+      </form>
+      <mat-divider></mat-divider>
+      <div class="form-element">
+        <button mat-raised-button color="primary" type="submit" class="button"
+          [disabled]="!(profileForm.valid)">Submit
+          Form</button>
+      </div>
+
+    </form>
+  </mat-card-content>
+</mat-card>
