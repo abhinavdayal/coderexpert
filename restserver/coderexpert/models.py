@@ -57,28 +57,6 @@ class CourseAttempt(models.Model):
    def is_synced(self):
        return self.update_time > self.course.update_time
 
-   def sync(self):
-       if not self.is_synced:
-           # queries to update this courseattempt
-           # get all lesson attempts
-           # check if they are synced
-           lessonattempts = LessonAttempt.objects.filter(user=self.user, lesson__course=self.course)
-           self.lesson_attempts = 0
-           self.lessons_completed = 0
-           self.score = 0
-           self.latest_attempt_time = None
-           latest_attempt_time = None
-           for lessonattempt in lessonattempts:
-               if not lessonattempt.is_synced:
-                   lessonattempt.sync()
-               self.lesson_attempts += 1 if lessonattempt.questions_completed>0 else 0
-               if lessonattempt.questions_completed==lessonattempt.lesson.question_count:
-                   self.lessons_completed += 1 
-               self.score += lessonattempt.score
-               self.latest_attempt_time = lessonattempt.latest_attempt_time if self.latest_attempt_time==None else max(self.latest_attempt_time, lessonattempt.latest_attempt_time)
-            self.save()
-
-
 
 class Lesson(models.Model):
    title = models.CharField(max_length=50)
@@ -113,25 +91,7 @@ class LessonAttempt(models.Model):
    @property
    def is_synced(self):
        return self.update_time > self.lesson.update_time
-
-   def sync(self):
-       if not self.is_synced:
-           # queries to update this courseattempt
-           # get all lesson attempts
-           # check if they are synced
-           self.score = 0
-           self.questions_completed = 0
-           self.latest_attempt_time = None
-
-           questions = LessonQuestion.objects.filter(lesson=self)
-           
-           for question in questions:
-               attempt = Attempt.objects.filter(question=question.question, user=self.user).aggregate(Max('score'), Max('end_time'))
-               if attempt != None:
-                   self.questions_completed += 1 if attempt.score__max>0 else 0
-                   self.score += attempt.score__max
-                   self.latest_attempt_time = attempt.end_time__max if self.latest_attempt_time==None else max(self.latest_attempt_time, attempt.end_time__max)
-           self.save()
+       
 
 class LessonQuestion(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
@@ -148,19 +108,22 @@ class LessonQuestion(models.Model):
 
 @receiver(pre_delete, sender=LessonQuestion)
 def delete_lesson_question(sender, instance, **kwargs):
-      instance.lesson.question_count -= 1
-      instance.lesson.update_time = datetime.datetime.now()
-      instance.lesson.course.update_time = datetime.datetime.now()
-      instance.lesson.save()
-      instance.lesson.course.save()
+      LessonHelper.processQuestionChange(instance.lesson, -1)
       
 @receiver(pre_save, sender=LessonQuestion)
 def create_lesson_question(sender, instance, **kwargs):
-      instance.lesson.question_count += 1
-      instance.lesson.update_time = datetime.datetime.now()
-      instance.lesson.course.update_time = datetime.datetime.now()
-      instance.lesson.save()
-      instance.lesson.course.save()
+      LessonHelper.processQuestionChange(instance.lesson, 1)
+
+
+class Group(model.Model):
+    title = models.CharField(max_length=50, db_index=True)
+    description = models.CharField(max_length=500)
+    score = models.IntegerField(default=0)
+    attempts = models.IntegerField(default=0)
+
+class GroupMember(model.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
 
 class Tag(model.Model):
@@ -256,16 +219,7 @@ def save_user_attempt(sender, instance, **kwargs):
             group.score += scorechange
             group.save()
 
-        
-class Group(model.Model):
-    title = models.CharField(max_length=50, db_index=True)
-    description = models.CharField(max_length=500)
-    score = models.IntegerField(default=0)
-    attempts = models.IntegerField(default=0)
-
-class GroupMember(model.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    
 
         
 
