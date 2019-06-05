@@ -45,7 +45,7 @@ class CourseAttempt(models.Model):
    course = models.ForeignKey(Course, on_delete=models.CASCADE)
    user = models.ForeignKey(User, on_delete=models.CASCADE)
    start_time = models.DateTimeField(auto_now_add=True)
-   completion_time = models.DateTimeField(blank=True, null=True)
+   latest_attempt_time = models.DateTimeField(blank=True, null=True)
    update_time = models.DateTimeField(auto_now_add=True)
    # below 3 feels must be calculated fields if underlying course is updated
    # after the last update time, but then we need to update the last update time also
@@ -66,18 +66,16 @@ class CourseAttempt(models.Model):
            self.lesson_attempts = 0
            self.lessons_completed = 0
            self.score = 0
-           self.completion_time = None
-           latest_completion_time = None
+           self.latest_attempt_time = None
+           latest_attempt_time = None
            for lessonattempt in lessonattempts:
                if not lessonattempt.is_synced:
                    lessonattempt.sync()
                self.lesson_attempts += 1 if lessonattempt.questions_completed>0 else 0
                if lessonattempt.questions_completed==lessonattempt.lesson.question_count:
                    self.lessons_completed += 1 
-                   latest_completion_time = lessonattempt.completion_time
                self.score += lessonattempt.score
-            if self.lessons_completed == self.course.lesson_count:
-                self.completion_time = latest_completion_time
+               self.latest_attempt_time = lessonattempt.latest_attempt_time if self.latest_attempt_time==None else max(self.latest_attempt_time, lessonattempt.latest_attempt_time)
             self.save()
 
 
@@ -107,7 +105,7 @@ class LessonAttempt(models.Model):
    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
    user = models.ForeignKey(User, on_delete=models.CASCADE)
    start_time = models.DateTimeField(auto_now_add=True)
-   completion_time = models.DateTimeField(blank=True, null=True)
+   latest_attempt_time = models.DateTimeField(blank=True, null=True)
    update_time = models.DateTimeField(auto_now_add=True)
    questions_completed = models.IntegerField(default=0)
    score = models.IntegerField(default=0)
@@ -121,10 +119,9 @@ class LessonAttempt(models.Model):
            # queries to update this courseattempt
            # get all lesson attempts
            # check if they are synced
-           latest_attempt_time = None
            self.score = 0
            self.questions_completed = 0
-           self.completion_time = None
+           self.latest_attempt_time = None
 
            questions = LessonQuestion.objects.filter(lesson=self)
            
@@ -133,9 +130,7 @@ class LessonAttempt(models.Model):
                if attempt != None:
                    self.questions_completed += 1 if attempt.score__max>0 else 0
                    self.score += attempt.score__max
-                   latest_attempt_time = attempt.end_time__max
-           if self.questions_completed == self.lesson.question_count:
-               self.completion_time = latest_attempt_time
+                   self.latest_attempt_time = attempt.end_time__max if self.latest_attempt_time==None else max(self.latest_attempt_time, attempt.end_time__max)
            self.save()
 
 class LessonQuestion(models.Model):
@@ -155,13 +150,17 @@ class LessonQuestion(models.Model):
 def delete_lesson_question(sender, instance, **kwargs):
       instance.lesson.question_count -= 1
       instance.lesson.update_time = datetime.datetime.now()
+      instance.lesson.course.update_time = datetime.datetime.now()
       instance.lesson.save()
+      instance.lesson.course.save()
       
 @receiver(pre_save, sender=LessonQuestion)
 def create_lesson_question(sender, instance, **kwargs):
       instance.lesson.question_count += 1
       instance.lesson.update_time = datetime.datetime.now()
+      instance.lesson.course.update_time = datetime.datetime.now()
       instance.lesson.save()
+      instance.lesson.course.save()
 
 
 class Tag(model.Model):
@@ -216,6 +215,59 @@ class Attempt(model.Model):
 
     def __str__(self):
         return '%s - %s' % (self.user.email, self.question.url)
+
+@receiver(pre_save, sender=Attempt)
+def save_user_attempt(sender, instance, **kwargs):
+    lessons = LessonQuestion.objects.filter(question=instance.question)
+    for lesson in lessons:
+        lesson_attempt = LessonAttempt.objects.get(lesson=lesson, user=instance.user)
+        lesson_attempt.latest_attempt_time = instance.end_time
+        pscore = lesson_attempt.score
+        # we need to update the lesson attempt and course attempt objects based on this attempt
+        # now this attempt may be first attempt or revised attempt
+        # we always keep the max score thus far so we need to use aggregates.
+
+        attempt = Attempt.objects.filter(question=instance.question, user=instance.user).aggregate(Max('score'), Max('end_time'))
+        scorechange = 0
+        if attempt != None:
+            if instance.score > attempt.score__max:
+                scorechange = instance.score - attempt.score__max
+        elif instance.score > 0:
+            lesson_attempt.questions_completed += 1
+            scorechange = instance.score
+
+        lesson_attempt.score += scorechange
+
+        lesson_attempt.save()
+        
+        course_attempt = CourseAttempt.objects.get(user=instance.user, course=lesson.course)
+        course_attempt.latest_attempt_time = instance.end_time
+        if lesson_attempt.questions_completed == lesson.question_count:
+            course_attempt.lessons_completed += 1
+        
+        course_attempt.score += lesson_attempt.score - pscore
+        course_attempt.save()
+
+        #find groups user belongs to and update the stats
+        groups = GroupMember.objects.filter(user=instance.user)
+        for group in groups:
+            #TODO: update group score and attempts to see which group is doing the best
+            group.attempts += 1
+            group.score += scorechange
+            group.save()
+
+        
+class Group(model.Model):
+    title = models.CharField(max_length=50, db_index=True)
+    description = models.CharField(max_length=500)
+    score = models.IntegerField(default=0)
+    attempts = models.IntegerField(default=0)
+
+class GroupMember(model.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+
+        
 
 
 
