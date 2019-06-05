@@ -1,0 +1,6 @@
+<div class="courses" *ngIf="init">
+  <app-course-tile *ngFor="let course of FilteredCourses().slice(from, to)"
+     [course]="course" [subscribed]="isSubscribed(course.id)"
+     (didsubscribe)="mycourses.push($event.attempt)">
+  </app-course-tile>
+</div>

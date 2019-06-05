@@ -1,0 +1,24 @@
+<mat-card class="lesson">
+  <mat-card-header>
+     <!-- <button mat-icon-button mat-card-avatar *ngIf="subscribed">
+        <mat-icon class="subscribed">check_circle</mat-icon>
+     </button>
+     <button mat-icon-button mat-card-avatar *ngIf="!subscribed" (click)="subscribe()">
+        <mat-icon class="unsubscribed">add_circle_outline</mat-icon>
+     </button>-->
+     <span class="progress">{{lessonattempt.questions}}/{{lesson.questionCount}}</span> 
+     <mat-card-title>{{lesson.title}}</mat-card-title>
+     <!-- <mat-card-subtitle>{{category}}</mat-card-subtitle> -->
+  </mat-card-header>
+
+  <mat-card-content>
+     <img [src]="lessonImage" alt="{{lesson.title}}">
+     <div class="description">
+        <p>{{lesson.description}}</p>
+        <div class="center">
+           <a mat-raised-button color="accent" 
+           [routerLink]="[lesson.id]"  [state]="{lesson: lesson, course: course}">Go to Lesson</a>
+        </div>
+     </div>
+  </mat-card-content>
+</mat-card>

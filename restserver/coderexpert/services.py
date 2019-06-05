@@ -8,7 +8,7 @@ class CourseAttemptHelper:
         course_attempt = None
         try:
             course_attempt = CourseAttempt.objects.get(course=course, user=user)
-            course_attempt.sync()
+            CourseAttemptHelper.sync_course_attempt(course_attempt)
         except ObjectDoesNotExist:
             pass
         return course_attempt
@@ -18,12 +18,12 @@ class CourseAttemptHelper:
     def get_all_user_course_attempts(user):
         course_attempts = CourseAttempt.objects.filter(user=user)
         for course_attempt in course_attempts:
-            course_attempt.sync()
+            CourseAttemptHelper.sync_course_attempt(course_attempt)
         return course_attempts
 
 
     @staticmethod
-    def syncCourseAttempt(course_attempt):
+    def sync_course_attempt(course_attempt):
         if not course_attempt.is_synced:
            lessonattempts = LessonAttempt.objects.filter(user=course_attempt.user, lesson__course=course_attempt.course)
            course_attempt.lesson_attempts = 0
@@ -32,7 +32,7 @@ class CourseAttemptHelper:
            course_attempt.latest_attempt_time = None
            for lessonattempt in lessonattempts:
                if not lessonattempt.is_synced:
-                   LessonAttemptHelper.syncLessonAttempt(lessonattempt)
+                   LessonAttemptHelper.sync_lesson_attempt(lessonattempt)
                course_attempt.lesson_attempts += 1 if lessonattempt.questions_completed>0 else 0
                if lessonattempt.questions_completed==lessonattempt.lesson.question_count:
                    course_attempt.lessons_completed += 1 
@@ -41,13 +41,24 @@ class CourseAttemptHelper:
             course_attempt.save()
 
 class LessonAttemptHelper:
+
+    @staticmethod
+    def create_lesson_attempt(lesson, user):
+        lesson_attempt, created = LessonAttempt.objects.get_or_create(lesson=lesson, user=user)
+        if created:
+            courseattempt = CourseAttempt.objects.filter(course=lesson.course, user=request.user)
+            courseattempt.lessonAttempts += 1
+            courseattempt.save()
+        else:
+            LessonAttemptHelper.sync_lesson_attempt(lesson_attempt)
+        return lesson_attempt
     
     @staticmethod
     def get_user_lesson_attempt(lesson, user):
         lesson_attempt = None
         try:
             lesson_attempt = LessonAttempt.objects.get(lesson=lesson, user=user)
-            lesson_attempt.sync()
+            LessonAttemptHelper.sync_lesson_attempt(lesson_attempt)
         except ObjectDoesNotExist:
             pass
         return lesson_attempt
@@ -56,11 +67,11 @@ class LessonAttemptHelper:
     def get_all_user_lesson_attempts(user, course):
         lesson_attempts = LessonAttempt.objects.filter(user=user, lesson__course=course)
         for lesson_attempt in lesson_attempts:
-            lesson_attempt.sync()
+            LessonAttemptHelper.sync_lesson_attempt(lesson_attempt)
         return lesson_attempts
 
     @staticmethod
-    def syncLessonAttempt(lesson_attempt):
+    def sync_lesson_attempt(lesson_attempt):
         if not lesson_attempt.is_synced:
            lesson_attempt.score = 0
            lesson_attempt.questions_completed = 0
@@ -79,7 +90,7 @@ class LessonAttemptHelper:
 
 class LessonHelper:
     @staticmethod
-    def processQuestionCHange(lesson, question_change):
+    def process_question_change(lesson, question_change):
         course = lesson.course
 
         lesson.question_count += question_change
@@ -88,3 +99,8 @@ class LessonHelper:
 
         lesson.save()
         course.save()
+
+class QuestionHelper:
+    @staticmethod
+    def create_question():
+        pass

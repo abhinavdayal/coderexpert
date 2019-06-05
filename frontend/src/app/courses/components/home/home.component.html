@@ -1,0 +1,24 @@
+<div class="container">
+  <div class="toppart">
+     <div class="heading">
+        <mat-icon class="mainicon">apps</mat-icon>
+        <h1 class='mat-display-1'>Courses</h1>
+     </div>
+     <div class='filter-container'>
+        <mat-form-field class="formfield">
+           <input type="search" matInput placeholder="Search" [(ngModel)]="searchText">
+           <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-checkbox class="formfield" [(ngModel)]="onlymycourses">My Courses</mat-checkbox>
+
+        <mat-paginator class="formfield" [length]="courses.length" [pageSize]="10" [pageSizeOptions]="[5, 10, 25, 100]"
+           (page)="pageindex = $event.pageIndex; pagesize=$event.pageSize">
+        </mat-paginator>
+     </div>
+  </div>
+  <app-course-list [from]="pageindex*pagesize" [to]="(pageindex+1)*pagesize"
+     [search]="searchText" [category]=[selectedCategory] [onlymycourses]="onlymycourses" [courses]="courses">
+  </app-course-list>
+
+</div>

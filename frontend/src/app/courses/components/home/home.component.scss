@@ -1,0 +1,47 @@
+@import 'src/theme.scss';
+
+$primary: map-get($interview-app-theme, primary);
+$accent: map-get($interview-app-theme, accent);
+
+.container {
+   text-align: center;
+}
+
+.filter-container {
+   display: flex;
+   flex-direction: row;
+   flex-wrap: wrap;
+   justify-content: space-evenly;
+   margin-bottom:50px;
+}
+
+.formfield {
+   max-width:400px;
+   margin: 5px 10px;
+   background-color: transparent;
+}
+
+mat-checkbox.formfield {
+   padding-top: 15px;
+}
+
+.mainicon {
+   height:60px;
+   width:60px;
+   font-size:60px;
+   margin: 0 auto;
+}
+
+.heading {
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   text-align: center;
+}
+
+.toppart {
+   background-color: mat-color($primary, 50);
+   margin-top: -50px;
+   padding-top: 50px;
+}
+

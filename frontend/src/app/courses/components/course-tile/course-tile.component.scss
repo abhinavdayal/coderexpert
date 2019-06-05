@@ -1,0 +1,93 @@
+@import 'src/theme.scss';
+
+$radius: 15px;
+$primary: map-get($interview-app-theme, primary);
+$accent: map-get($interview-app-theme, accent);
+   
+.course {
+   width:350px;
+   padding:0;
+}
+
+.subscribed {
+   color:green;
+   cursor: default;
+}
+
+.unsubscribed {
+   color:#444444;
+}
+
+.mat-card-avatar {
+   transform: scale(2.0);
+   cursor: pointer;
+   margin-top:3px;
+}
+
+@keyframes panfrombottom {
+   0% { top: 200px; opacity: 0;}
+   100% { top: 0px; opacity: 1.0}
+}
+
+mat-card {
+   border-radius: $radius;
+   text-align: justify;
+   margin: 20px;
+}
+
+mat-card-header {
+   padding: 10px 10px 0 10px;
+}
+
+mat-card-subtitle {
+   margin-bottom:10px;
+}
+
+mat-card-content {
+   position: relative;
+   width:350px;
+   height:200px;
+   overflow: hidden;
+}
+
+mat-card-content img {
+   width:350px;
+   height:200px;
+   object-fit: cover;
+   border-radius: 0 0 $radius $radius;
+}
+
+.center {
+   text-align: center;
+}
+
+.description {
+   background-color: rgba(0,0,0,0.6);
+   color:white;
+   position:absolute;
+   top:-250px;
+   width: 350px;
+   height: 200px;
+   transition: all 300ms;
+   margin:0;
+   padding: 10px;
+   box-sizing: border-box;
+   border-radius: 0 0 $radius $radius;
+}
+
+.description button {
+   text-align:center;
+}
+
+mat-card-content:hover .description {
+   top:0px;
+}
+
+.progressamount {
+   position: absolute;
+   right: 10px;
+   top: 10px;
+}
+// .cost::before {
+//    content: "₹ ";
+// }

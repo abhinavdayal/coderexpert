@@ -6,3 +6,40 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = CodingProfile
         fields = "__all__"
 
+
+class CourseSerializer(serializers.ModelSerializer):
+   class Meta:
+        model = Course
+        fields = '__all__'
+
+class CourseIdSerializer(serializers.ModelSerializer):
+   class Meta:
+        model = Course
+        fields = ("id",)
+
+class LessonSerializer(serializers.ModelSerializer):
+   class Meta:
+        model = Lesson
+        fields = '__all__'
+
+class QuestionSerializer(serializers.ModelSerializer):
+   class Meta:
+        model = Question
+        fields = '__all__'
+
+class LessonAttemptSerializer(serializers.ModelSerializer):
+   class Meta:
+        model = LessonAttempt
+        fields = '__all__'
+
+class CourseAttemptSerializer(serializers.ModelSerializer):
+   class Meta:
+        model = CourseAttempt
+        fields = '__all__'
+
+class AttemptSerializer(serializers.Serializer):
+   question = serializers.IntegerField()
+   count = serializers.IntegerField()
+   bestscore = serializers.IntegerField()
+   totalscore = serializers.IntegerField()
+

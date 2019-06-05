@@ -1,0 +1,6 @@
+<div class="lessons">
+  <app-lesson-tile *ngFor="let lesson of FilteredLessons().slice(from, to)" 
+      [lesson]="lesson" [subscribed]="subscribed" [lessonattempt]="getlessonattempt(lesson)"
+      [course]="course">
+  </app-lesson-tile>
+</div>

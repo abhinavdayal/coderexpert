@@ -7,6 +7,8 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 # Create your models here.
 from django.contrib.auth.models import User
 
+import .services
+
 # Create your models here.
 class CodingProfile(model.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -65,6 +67,7 @@ class Lesson(models.Model):
    image = models.URLField(max_length=200, blank=True)
    question_count = models.IntegerField(default=0)
    update_time = models.DateTimeField(auto_now_add=True)
+   content = models.TextField(blank=True)
 
    def __str__(self):
         return self.title
@@ -93,28 +96,6 @@ class LessonAttempt(models.Model):
        return self.update_time > self.lesson.update_time
        
 
-class LessonQuestion(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    # can record attempts done via this lesson separately
-    # how to settle a question linked to multiple lessons, if user completes it
-    # should all lessons be updated? Then many to many pmapping will be more effective
-    # A LessonQestion can be deleted but it does not impact the question
-    # When you add a question, you search for question or put URL and create
-    # Upon deletion of lessonQuestion, its stats in lesson is changed, and all lesson_attempts must change
-    # But this only impacts the current lesson and not other lessons.
-    # a scrape of attempts also looks into existig attempts, so we need not worry about updating on the fly
-    # however deletion need to be updated
-
-@receiver(pre_delete, sender=LessonQuestion)
-def delete_lesson_question(sender, instance, **kwargs):
-      LessonHelper.processQuestionChange(instance.lesson, -1)
-      
-@receiver(pre_save, sender=LessonQuestion)
-def create_lesson_question(sender, instance, **kwargs):
-      LessonHelper.processQuestionChange(instance.lesson, 1)
-
-
 class Group(model.Model):
     title = models.CharField(max_length=50, db_index=True)
     description = models.CharField(max_length=500)
@@ -142,6 +123,7 @@ class Question(model.Model):
     )
     title = models.CharField(max_length=50, db_index=True)
     question = models.TextField()
+    content = models.TextField(blank=True)
     tags = models.ManyToManyField(Tag)
     score = models.IntegerField(max_length=3)
     url = models.URLField(max_length=256, unique=True)
@@ -219,6 +201,27 @@ def save_user_attempt(sender, instance, **kwargs):
             group.score += scorechange
             group.save()
 
+
+class LessonQuestion(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    # can record attempts done via this lesson separately
+    # how to settle a question linked to multiple lessons, if user completes it
+    # should all lessons be updated? Then many to many pmapping will be more effective
+    # A LessonQestion can be deleted but it does not impact the question
+    # When you add a question, you search for question or put URL and create
+    # Upon deletion of lessonQuestion, its stats in lesson is changed, and all lesson_attempts must change
+    # But this only impacts the current lesson and not other lessons.
+    # a scrape of attempts also looks into existig attempts, so we need not worry about updating on the fly
+    # however deletion need to be updated
+
+@receiver(pre_delete, sender=LessonQuestion)
+def delete_lesson_question(sender, instance, **kwargs):
+      services.LessonHelper.process_question_change(instance.lesson, -1)
+      
+@receiver(pre_save, sender=LessonQuestion)
+def create_lesson_question(sender, instance, **kwargs):
+      services.LessonHelper.process_question_change(instance.lesson, 1)
     
 
         

@@ -1,0 +1,37 @@
+<div class="container" *ngIf="init==2">
+  <div class="toppart">
+     <div class="courseimage" [style.background-image]="image"></div>
+     <div class="gradient"></div>
+     <div class="heading">
+        <mat-icon class="mainicon">assignment</mat-icon>
+        <h1 class='mat-display-1'>{{course.title}}</h1>
+        <h3 class='mat-h1'>{{course.category}}</h3>
+        <div class='filter-container'>
+              <mat-form-field class="formfield">
+                 <input type="search" matInput placeholder="Search" [(ngModel)]="searchText">
+                 <mat-icon matSuffix>search</mat-icon>
+              </mat-form-field>
+     
+              <mat-form-field class="formfield">
+                 <mat-label>Display</mat-label>
+                 <mat-select [(value)]="display">
+                    <mat-option value="0" selected>All</mat-option>
+                    <mat-option value="1">Pending</mat-option>
+                    <mat-option value="2">In Progress</mat-option>
+                    <mat-option value="3">Completed</mat-option>
+                 </mat-select>
+              </mat-form-field>
+     
+     
+              <mat-paginator class="formfield" [length]="lessons.length" [pageSize]="10" [pageSizeOptions]="[5, 10, 25, 100]"
+                 (page)="pageindex = $event.pageIndex; pagesize=$event.pageSize">
+              </mat-paginator>
+           </div>
+     </div>
+     
+  </div>
+  <app-lesson-list [course]="course" [from]="pageindex*pagesize" [to]="(pageindex+1)*pagesize" [search]="searchText" [display]="display"
+     [lessons]="lessons" [lessonattempts]="lessonattempts" *ngIf = "init==2">
+  </app-lesson-list >
+
+</div>
