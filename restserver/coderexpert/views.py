@@ -162,7 +162,7 @@ class SubscribeCourseView(APIView):
     def post(self, request):
         try:
             course = Course.objects.get(pk=request.data["courseid"])
-            c, created = CourseAttempt.objects.get_or_create(course=course, user=request.user)
+            c = services.CourseAttemptHelper.create_course_attempt(course, request.user)
             return Response(CourseAttemptSerializer(c).data, status=201)
         except Exception as e:
             print(e)

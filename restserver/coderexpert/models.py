@@ -10,13 +10,17 @@ from django.contrib.auth.models import User
 import .services
 
 # Create your models here.
-class CodingProfile(model.Model):
+class CodingProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     geeks_handle = models.CharField(max_length=30, null=True)
     hackerrank_handle = models.CharField(max_length=30, null=True)
     interviewbit_handle = models.CharField(max_length=30, null=True)
     codechef_handle = models.CharField(max_length=30, null=True)
     codeforces_handle = models.CharField(max_length=30, null=True)
+    problems_solved = models.IntegerField(default=0)
+    total_attempts = models.IntegerField(default=0)
+    last_active = models.DateTimeField(auto_now_add=True)
+    total_score = models.IntegerField(default=0)
 
     def __str__(self):
         return self.user
@@ -36,6 +40,7 @@ class Course(models.Model):
    image = models.URLField(max_length=200, blank=True)
    lesson_count = models.IntegerField(default=0)
    update_time = models.DateTimeField(auto_now_add=True)
+   attempt_count = models.IntegerField(default=0)
    def __str__(self):
         return self.title
 
@@ -68,6 +73,7 @@ class Lesson(models.Model):
    question_count = models.IntegerField(default=0)
    update_time = models.DateTimeField(auto_now_add=True)
    content = models.TextField(blank=True)
+   attempt_count = models.IntegerField(default=0)
 
    def __str__(self):
         return self.title
@@ -96,24 +102,24 @@ class LessonAttempt(models.Model):
        return self.update_time > self.lesson.update_time
        
 
-class Group(model.Model):
+class Group(models.Model):
     title = models.CharField(max_length=50, db_index=True)
     description = models.CharField(max_length=500)
     score = models.IntegerField(default=0)
     attempts = models.IntegerField(default=0)
 
-class GroupMember(model.Model):
+class GroupMember(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
 
-class Tag(model.Model):
+class Tag(models.Model):
     topic = models.CharField(max_length=50)
 
     def __str__(self):
         return self.topic
 
-class Question(model.Model):
+class Question(models.Model):
     DOMAINS = (
         ('GFG', 'geeksforgeeks.org'),
         ('HR', 'hackerrank.com'),
@@ -132,10 +138,21 @@ class Question(model.Model):
     qid = models.CharField(max_length=20)
     accuracy = models.FloatField()
 
+    total_attempts = model.IntegerField(default=0)
+    correct_attempts = models.IntegerField(default=0)
+    tle_attempts = models.IntegerField(default=0)
+    wrong_attempts = models.IntegerField(default=0)
+    mle_attempts = models.IntegerField(default=0)
+    last_attempt_time = models.DateTimeField(blank=True)
+
+    total_score = models.IntegerField(default=0)
+    #we have to store and update a lots of analytics, so we need to think over how to do that in a manageable and efficient manner
+
+
     def __str__(self):
         return self.url
 
-class Attempt(model.Model):
+class Attempt(models.Model):
     VERDICTS = (
         ('C', 'Correct'),
         ('W', 'Wrong'),
@@ -163,43 +180,7 @@ class Attempt(model.Model):
 
 @receiver(pre_save, sender=Attempt)
 def save_user_attempt(sender, instance, **kwargs):
-    lessons = LessonQuestion.objects.filter(question=instance.question)
-    for lesson in lessons:
-        lesson_attempt = LessonAttempt.objects.get(lesson=lesson, user=instance.user)
-        lesson_attempt.latest_attempt_time = instance.end_time
-        pscore = lesson_attempt.score
-        # we need to update the lesson attempt and course attempt objects based on this attempt
-        # now this attempt may be first attempt or revised attempt
-        # we always keep the max score thus far so we need to use aggregates.
-
-        attempt = Attempt.objects.filter(question=instance.question, user=instance.user).aggregate(Max('score'), Max('end_time'))
-        scorechange = 0
-        if attempt != None:
-            if instance.score > attempt.score__max:
-                scorechange = instance.score - attempt.score__max
-        elif instance.score > 0:
-            lesson_attempt.questions_completed += 1
-            scorechange = instance.score
-
-        lesson_attempt.score += scorechange
-
-        lesson_attempt.save()
-        
-        course_attempt = CourseAttempt.objects.get(user=instance.user, course=lesson.course)
-        course_attempt.latest_attempt_time = instance.end_time
-        if lesson_attempt.questions_completed == lesson.question_count:
-            course_attempt.lessons_completed += 1
-        
-        course_attempt.score += lesson_attempt.score - pscore
-        course_attempt.save()
-
-        #find groups user belongs to and update the stats
-        groups = GroupMember.objects.filter(user=instance.user)
-        for group in groups:
-            #TODO: update group score and attempts to see which group is doing the best
-            group.attempts += 1
-            group.score += scorechange
-            group.save()
+    
 
 
 class LessonQuestion(models.Model):
@@ -208,7 +189,7 @@ class LessonQuestion(models.Model):
     # can record attempts done via this lesson separately
     # how to settle a question linked to multiple lessons, if user completes it
     # should all lessons be updated? Then many to many pmapping will be more effective
-    # A LessonQestion can be deleted but it does not impact the question
+    # A LessonQestion can be deleted but it does not impact the questionfrontend
     # When you add a question, you search for question or put URL and create
     # Upon deletion of lessonQuestion, its stats in lesson is changed, and all lesson_attempts must change
     # But this only impacts the current lesson and not other lessons.
