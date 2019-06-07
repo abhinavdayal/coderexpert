@@ -25,7 +25,27 @@ class LessonSerializer(serializers.ModelSerializer):
 class QuestionSerializer(serializers.ModelSerializer):
    class Meta:
         model = Question
+        fields = ('id', 'title', 'score', 'level', 'accuracy', 'local_accuracy')
+
+class QuestionDetailsSerializer(serializers.ModelSerializer):
+   class Meta:
+        model = Question
         fields = '__all__'
+
+class CreateQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = ('title', 'question', 'content', 'score', 'url', 'level', 'domain', 'qid', 'accuracy')
+
+class CreateCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ('title', 'description', 'image')
+
+class CreateLessonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lesson
+        fields = ('title', 'description', 'content', 'image', 'course')
 
 class LessonAttemptSerializer(serializers.ModelSerializer):
    class Meta:

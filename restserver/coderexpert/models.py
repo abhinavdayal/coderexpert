@@ -145,6 +145,11 @@ class Question(models.Model):
     mle_attempts = models.IntegerField(default=0)
     last_attempt_time = models.DateTimeField(blank=True)
 
+    @property
+    def local_accuracy(self):
+       return self.correct_attempts/self.total_attempts if self.total_attempts>0 else 0
+
+
     total_score = models.IntegerField(default=0)
     #we have to store and update a lots of analytics, so we need to think over how to do that in a manageable and efficient manner
 
@@ -152,8 +157,14 @@ class Question(models.Model):
     def __str__(self):
         return self.url
 
+class UserQuestionView(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    view_time = models.DateTimeField(auto_now_add=True)
+
 class Attempt(models.Model):
     VERDICTS = (
+        ('NA', 'Not Attempted')
         ('C', 'Correct'),
         ('W', 'Wrong'),
         ('TLE', 'Time Limit Exceeded'),
@@ -167,20 +178,19 @@ class Attempt(models.Model):
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    verdict = models.CharField(max_length=3, choices=VERDICTS)
-    answer = models.TextField() 
-    language = models.CharField(max_length=10, choices=LANGUAGES)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    minutes_taken = models.IntegerField()
-    score = models.IntegerField()
+    verdict = models.CharField(max_length=3, choices=VERDICTS, default='NA')
+    answer = models.TextField(blank=True) 
+    language = models.CharField(max_length=10, choices=LANGUAGES, blank=True)
+    attempt_time = models.DateTimeField(null=True, blank=True)
+    score = models.IntegerField(default=0)
+
 
     def __str__(self):
         return '%s - %s' % (self.user.email, self.question.url)
 
 @receiver(pre_save, sender=Attempt)
 def save_user_attempt(sender, instance, **kwargs):
-    
+    services.AttemptHelper.update_attempt_stats(instance)
 
 
 class LessonQuestion(models.Model):

@@ -4,7 +4,8 @@ from . import scraper
 from . import services
 from .serializers import CodingProfileSerializer, \
     CourseSerializer, CourseIdSerializer, LessonSerializer, QuestionSerializer, \
-    CourseAttemptSerializer, LessonAttemptSerializer, AttemptSerializer
+    CourseAttemptSerializer, LessonAttemptSerializer, AttemptSerializer,\
+    QuestionDetailsSerializer, CreateQuestionSerializer, CreateLessonSerializer, CreateCourseSerializer
 
 from auth.serializers import ProfileSerializer
 from rest_framework.response import Response
@@ -117,6 +118,34 @@ class ListGetQuestionsView(generics.ListAPIView):
             lesson = Lesson.objects.get(pk=lessonid)
             return Question.objects.filter(lesson=lesson)
 
+class QuestionView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, courseid, lessonid, questionid):
+        try:
+            course = Course.objects.get(pk=courseid)
+            ca = CourseAttempt.objects.get(user=request.user, course=subscribedcourse)
+            if ca:
+                lesson = Lesson.objects.get(pk=lessonid)
+                lq = LessonQuestion.objects.get(question=questionid, lesson=lessonid)
+                if lq:
+                    question = Question.objects.get(pk=questionid)
+                    # save user's time of view of this question
+                    u = UserQuestionView(question=question, user=request.user)
+                    u.save()
+                    return Response(QuestionDetailsSerializer(question).data, status=201)
+        except Exception as e:
+            return Response({'error':e}, status=400)
+
+     def post(self, request):
+        try:
+            serializer = CreateQuestionSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201
+        except:
+            return Response(request.data, status=400)
+
 """
 Get summary of attempts made for all questions in a lesson that belongs to a subscribed course
 """
@@ -171,7 +200,7 @@ class SubscribeCourseView(APIView):
 """
 Get course info and the courseattempt infor for a subscribed course for a user
 """
-class SubscribedCourseView(APIView):
+class CourseView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, courseid):
@@ -182,11 +211,20 @@ class SubscribedCourseView(APIView):
         except Exception as e:
             return Response({'error':e}, status=400)
 
+    def post(self, request):
+        try:
+            serializer = CreateCourseSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201
+        except:
+            return Response(request.data, status=400)
+
 """
 Get the lesson and its attempt for a user when lesson belongs to a subscribed course
 Create an attempt if its the first time he clicked on the lesson
 """
-class SubscribedLessonView(APIView):
+class LessonView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, lessonid):
@@ -201,6 +239,14 @@ class SubscribedLessonView(APIView):
         except Exception as e:
             print(e)
             return Response({'error':e}, status=400)
+    def post(self, request):
+        try:
+            serializer = CreateLessonSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201
+        except:
+            return Response(request.data, status=400)
 
 """
 Create a course

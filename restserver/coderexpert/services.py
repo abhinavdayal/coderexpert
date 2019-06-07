@@ -150,6 +150,7 @@ class QuestionHelper:
             question.wrong_attempts += 1
 
         question.save()
+       
 
 class ProfileHelper:
     @staticmethod
