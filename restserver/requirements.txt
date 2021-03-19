@@ -2,7 +2,7 @@ cachetools==3.1.1
 Django==2.2.1
 django-cors-headers==3.0.2
 django-rest-framework==0.1.0
-djangorestframework==3.9.4
+djangorestframework==3.11.2
 djangorestframework-simplejwt==4.3.0
 google-api-python-client==1.7.9
 google-auth==1.6.3
